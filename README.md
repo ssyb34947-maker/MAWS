@@ -82,7 +82,7 @@ roles:
 
 ## 运行游戏
 
----
+
 
 ### 主程序运行（推荐）
 ```bash
@@ -106,7 +106,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 ## 扩展说明
 
----
+
 
 ### 添加新角色
 1. 在 `config.yaml` 中添加角色配置
@@ -123,7 +123,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 ## 测试
 
----
+
 
 项目包含单元测试，用于验证模型适配器和其他功能是否正常工作。
 
@@ -143,7 +143,7 @@ python -m pytest tests/test_models_adapter.py
 
 ## 开发指南
 
----
+
 
 ### 项目组件说明
 
