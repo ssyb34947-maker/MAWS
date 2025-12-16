@@ -1,7 +1,7 @@
 # config.yaml
 project:
   name: werewolf-sim
-  # 移除固定的随机种子，让每次运行都有不同的随机分布
+
 models:
   default: deepseek
   adapters:
@@ -10,7 +10,6 @@ models:
       model: deepseek-chat
       api_key: "YOURAPIKEY"
       api_base: "https://api.deepseek.com"
-      # mapping: how to call in OpenAI-like wrapper
     qwen:
       type: bailian
       model: qwen-plus
@@ -51,7 +50,7 @@ roles:
       - name: witch
         count: 1
         abilities: ["save_once","poison_once"]
-# optional features
+
 game:
   allow_sheriff: false
   seat_numbering: true
