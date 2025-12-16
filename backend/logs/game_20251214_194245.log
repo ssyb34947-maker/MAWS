@@ -1,0 +1,15 @@
+2025-12-14 19:42:45.241 | INFO     | logger:log:63 - {"timestamp": "2025-12-14T19:42:45.241832", "phase": "init", "agent_id": null, "type": "system", "content": "Initializing game..."}
+2025-12-14 19:42:47.443 | INFO     | logger:log:63 - {"timestamp": "2025-12-14T19:42:47.443358", "phase": "init", "agent_id": null, "type": "system", "content": "Created 8 agents"}
+2025-12-14 19:42:47.443 | INFO     | logger:log:63 - {"timestamp": "2025-12-14T19:42:47.443867", "phase": "init", "agent_id": null, "type": "system", "content": "Agent 1: villager"}
+2025-12-14 19:42:47.445 | INFO     | logger:log:63 - {"timestamp": "2025-12-14T19:42:47.445247", "phase": "init", "agent_id": null, "type": "system", "content": "Agent 2: werewolf"}
+2025-12-14 19:42:47.445 | INFO     | logger:log:63 - {"timestamp": "2025-12-14T19:42:47.445247", "phase": "init", "agent_id": null, "type": "system", "content": "Agent 3: seer"}
+2025-12-14 19:42:47.446 | INFO     | logger:log:63 - {"timestamp": "2025-12-14T19:42:47.446257", "phase": "init", "agent_id": null, "type": "system", "content": "Agent 4: villager"}
+2025-12-14 19:42:47.446 | INFO     | logger:log:63 - {"timestamp": "2025-12-14T19:42:47.446257", "phase": "init", "agent_id": null, "type": "system", "content": "Agent 5: hunter"}
+2025-12-14 19:42:47.446 | INFO     | logger:log:63 - {"timestamp": "2025-12-14T19:42:47.446257", "phase": "init", "agent_id": null, "type": "system", "content": "Agent 6: villager"}
+2025-12-14 19:42:47.447 | INFO     | logger:log:63 - {"timestamp": "2025-12-14T19:42:47.447258", "phase": "init", "agent_id": null, "type": "system", "content": "Agent 7: witch"}
+2025-12-14 19:42:47.447 | INFO     | logger:log:63 - {"timestamp": "2025-12-14T19:42:47.447258", "phase": "init", "agent_id": null, "type": "system", "content": "Agent 8: werewolf"}
+2025-12-14 19:42:47.447 | INFO     | logger:log:63 - {"timestamp": "2025-12-14T19:42:47.447258", "phase": "night", "agent_id": null, "type": "system", "content": "Starting night 1"}
+2025-12-14 19:42:50.280 | INFO     | logger:log:63 - {"timestamp": "2025-12-14T19:42:50.280667", "phase": "night", "agent_id": 2, "type": "private_chat", "content": "3号，你是另一个狼人，我们得商量下今晚杀谁。现在信息太少，但最好别暴露自己。我觉得先刀个边缘点的玩家，比如7号或8号，不容易引起怀疑。你怎么看？"}
+2025-12-14 19:42:54.747 | INFO     | logger:log:63 - {"timestamp": "2025-12-14T19:42:54.747836", "phase": "night", "agent_id": 8, "type": "private_chat", "content": "\n2号，我同意你的想法。现在信息确实太少，刀边缘玩家比较稳妥。7号和8号都是不错的选择，我个人倾向于先刀7号，因为8号是我，刀7号可以避免引起对我的怀疑。你觉得呢？"}
+2025-12-14 19:42:56.361 | INFO     | logger:log:63 - {"timestamp": "2025-12-14T19:42:56.361315", "phase": "night", "agent_id": 2, "type": "action", "content": {"type": "night_kill", "target": 7, "explain": "Werewolf 2 voted to kill player 7"}}
+2025-12-14 19:42:57.653 | INFO     | logger:log:63 - {"timestamp": "2025-12-14T19:42:57.653634", "phase": "night", "agent_id": 8, "type": "action", "content": {"type": "night_kill", "target": 7, "explain": "Werewolf 8 voted to kill player 7"}}

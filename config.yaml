@@ -1,0 +1,63 @@
+# config.yaml
+project:
+  name: werewolf-sim
+  # 移除固定的随机种子，让每次运行都有不同的随机分布
+models:
+  default: deepseek
+  adapters:
+    deepseek:
+      type: http
+      model: deepseek-chat
+      api_key: "YOURAPIKEY"
+      api_base: "https://api.deepseek.com"
+      # mapping: how to call in OpenAI-like wrapper
+    qwen:
+      type: bailian
+      model: qwen-plus
+      api_key: "YOURAPIKEY"
+      api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    kimi:
+      type: bailian
+      model: Moonshot-Kimi-K2-Instruct
+      api_key: "YOURAPIKEY"
+      api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    GLM:
+      type: bailian
+      model: glm-4.6
+      api_key: "YOURAPIKEY"
+      api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    DouBao:
+      type: http
+      model: doubao-1-5-pro-32k-250115
+      api_key: "YOURAPIKEY"
+      api_base: "https://ark.cn-beijing.volces.com/api/v3"
+    
+roles:
+  default_setup:
+    total_agents: 8
+    roles:
+      - name: villager
+        count: 3
+        abilities: []
+      - name: werewolf
+        count: 2
+        abilities: ["night_kill","know_werewolves"]
+      - name: seer
+        count: 1
+        abilities: ["night_check"]
+      - name: hunter
+        count: 1
+        abilities: ["final_shot"]
+      - name: witch
+        count: 1
+        abilities: ["save_once","poison_once"]
+# optional features
+game:
+  allow_sheriff: false
+  seat_numbering: true
+  logging:
+    console: true
+    file: logs/game_{timestamp}.log
+  max_days: 6
+prompt:
+  template_file: prompts/agent_template.txt

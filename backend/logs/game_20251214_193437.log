@@ -1,0 +1,1 @@
+2025-12-14 19:34:37.390 | INFO     | logger:log:63 - {"timestamp": "2025-12-14T19:34:37.390253", "phase": "init", "agent_id": null, "type": "system", "content": "Initializing game..."}

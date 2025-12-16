@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>狼人杀游戏</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <button id="startButton">启动游戏</button>
+        
+        <div class="main-game-area">
+            <!-- 左侧角色区域 -->
+            <div class="left-section">
+                <div class="roles-container">
+                    <div class="role-column-left">
+                        <div class="role-box" data-player="1"><div class="role-name"></div><div class="speech-bubble left"></div></div>
+                        <div class="role-box" data-player="2"><div class="role-name"></div><div class="speech-bubble left"></div></div>
+                        <div class="role-box" data-player="3"><div class="role-name"></div><div class="speech-bubble left"></div></div>
+                        <div class="role-box" data-player="4"><div class="role-name"></div><div class="speech-bubble left"></div></div>
+                    </div>
+                    <div class="role-column-right">
+                        <div class="role-box" data-player="5"><div class="role-name"></div><div class="speech-bubble right"></div></div>
+                        <div class="role-box" data-player="6"><div class="role-name"></div><div class="speech-bubble right"></div></div>
+                        <div class="role-box" data-player="7"><div class="role-name"></div><div class="speech-bubble right"></div></div>
+                        <div class="role-box" data-player="8"><div class="role-name"></div><div class="speech-bubble right"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧信息区域 -->
+            <div class="right-section">
+                <!-- 状态展示框 -->
+                <div class="status-container">
+                    <div id="statusBox">状态：等待游戏开始</div>
+                </div>
+                
+                <!-- 历史对话框 -->
+                <div class="chat-container">
+                    <div class="messages" id="chatMessages"></div>
+                </div>
+            </div>
+        </div>
+
+        <script src="script.js"></script>
+</body>
+</html>
