@@ -286,7 +286,7 @@ class GameEngine:
             for werewolf in werewolves:
                 # 构建特殊的狼人私聊提示词
                 private_prompt = self._build_werewolf_private_prompt(werewolf, private_context)
-                logger.debug(f"Werewolf {werewolf.agent_id} private chat prompt:\n{private_prompt}")
+                #logger.debug(f"Werewolf {werewolf.agent_id} private chat prompt:\n{private_prompt}")
                 private_response = werewolf.model_adapter.call_model(private_prompt)
                 #logger.debug(f"Werewolf {werewolf.agent_id} private chat response:\n{private_response}")
                 
