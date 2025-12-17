@@ -96,6 +96,7 @@ class GameEngine:
                          model_config: Dict[str, Any], prompt_template: str):
                 super().__init__(agent_id, role, team, model_config, prompt_template)
                 self.model_adapter = ModelsAdapter(model_config)
+                #self.system_prompt = self._build_prompt
             
             def think(self, night_or_day: str, game_state: Dict[str, Any]) -> Dict[str, Any]:
                 # 构建提示词
@@ -136,6 +137,50 @@ class GameEngine:
                 
             def act(self, thought: Dict[str, Any]) -> Dict[str, Any]:
                 return thought.get("action", {"type": "none", "target": None})
+                
+            def _generate_role_allocation_info(self) -> str:
+                """
+                动态生成本局游戏的角色分配信息
+                
+                Returns:
+                    格式化后的角色分配信息字符串
+                """
+                # 统计各角色数量
+                role_counts = {}
+                for agent in self.game_engine_ref.agents:
+                    role = agent.role
+                    role_counts[role] = role_counts.get(role, 0) + 1
+                
+                # 生成描述文本
+                role_descriptions = []
+                role_description_map = {
+                    "werewolf": "狼人",
+                    "villager": "平民",
+                    "seer": "预言家",
+                    "witch": "女巫",
+                    "hunter": "猎人"
+                }
+                
+                for role, count in role_counts.items():
+                    chinese_role = role_description_map.get(role, role)
+                    role_descriptions.append(f"{count}个{chinese_role}")
+                
+                return "、".join(role_descriptions)
+                
+            def _generate_night_action_order(self) -> str:
+                """
+                生成夜晚行动顺序信息
+                
+                Returns:
+                    格式化后的夜晚行动顺序信息字符串
+                """
+                action_order = [
+                    "1. 狼人：互相确认身份并选择击杀目标",
+                    "2. 预言家：查验一名玩家身份，可以知道对方是好人还是狼人",
+                    "3. 女巫：选择是否使用解药救人或使用毒药杀人",
+                    "4. 猎人：无夜间行动"
+                ]
+                return "\n".join(action_order)
                 
             def _build_prompt(self, night_or_day: str, game_state: Dict[str, Any]) -> str:
                 # 根据角色加载对应的提示词模板
@@ -179,6 +224,14 @@ class GameEngine:
                 else:
                     prompt = prompt.replace("known_teammates", "无")
                 
+                # 动态生成本局游戏的角色分配信息
+                role_allocation_info = self._generate_role_allocation_info()
+                prompt = prompt.replace("role_allocation_info", role_allocation_info)
+                
+                # 生成夜晚行动顺序信息
+                night_action_order = self._generate_night_action_order()
+                prompt = prompt.replace("night_action_order", night_action_order)
+                
                 return prompt
         
         # 获取模型配置
@@ -193,7 +246,7 @@ class GameEngine:
             role=agent_info["role"],
             team=agent_info["team"],
             model_config=model_config,
-            prompt_template=""  # 不再使用这个参数，因为我们直接在_build_prompt中加载模板
+            prompt_template=""  # 不使用这个参数，因为我们直接在_build_prompt中加载模板
         )
         
         # 为agent添加config属性和project_root
@@ -233,14 +286,22 @@ class GameEngine:
             for werewolf in werewolves:
                 # 构建特殊的狼人私聊提示词
                 private_prompt = self._build_werewolf_private_prompt(werewolf, private_context)
-                #logger.debug(f"Werewolf {werewolf.agent_id} private chat prompt:\n{private_prompt}")
+                logger.debug(f"Werewolf {werewolf.agent_id} private chat prompt:\n{private_prompt}")
                 private_response = werewolf.model_adapter.call_model(private_prompt)
                 #logger.debug(f"Werewolf {werewolf.agent_id} private chat response:\n{private_response}")
+                
+                # 解析狼人的响应以提取发言和解释
+                try:
+                    parsed_response = json.loads(private_response)
+                    message_content = f"{parsed_response.get('speech', '')}。原因是：{parsed_response.get('action', {}).get('explain', '')}"
+                except json.JSONDecodeError:
+                    # 如果解析失败，使用原始响应
+                    message_content = private_response
                 
                 # 将私聊内容添加到记录中
                 private_message = {
                     "sender": werewolf.agent_id,
-                    "message": private_response,
+                    "message": message_content,
                     "timestamp": self.game_state["day"]
                 }
                 self.game_state["werewolf_private_chat"].append(private_message)
@@ -406,11 +467,11 @@ class GameEngine:
         for eliminated_player in eliminated_players:
             self._update_agents_environmental_awareness("night", eliminated_player)
         
-        # 更新预言家查验信息到所有存活Agent的记忆中
+        # 更新预言家查验信息到所有预言家的记忆中
         if seer_check_result:
             self._update_seer_check_info(seer_check_result)
         
-        # 更新女巫技能使用情况到所有存活Agent的记忆中
+        # 更新女巫技能使用情况到所以女巫的记忆中
         if witch_actions:
             self._update_witch_skill_info(witch_actions)
         
@@ -655,9 +716,13 @@ class GameEngine:
         运行完整游戏
         """
         print()
-        print('='*88)
-        print('='*37, 'WEREWOLF GAME', '='*36)
-        print('='*88)
+        print('='*196)
+        print()
+        print('='*91, 'WEREWOLF GAME', '='*90)
+        print()
+        print('='*91, 'WRITEN BY SAM', '='*90)
+        print()
+        print('='*196)
         print()
 
         self.initialize_game()
@@ -683,6 +748,56 @@ class GameEngine:
         
         self.logger.log_system("end", "Game finished")
 
+    def _generate_role_allocation_info_for_agent(self, agent) -> str:
+        """
+        为指定Agent生成本局游戏的角色分配信息
+        
+        Args:
+            agent: Agent实例
+            
+        Returns:
+            格式化后的角色分配信息字符串
+        """
+        # 统计各角色数量
+        role_counts = {}
+        for a in self.agents:
+            role = a.role
+            role_counts[role] = role_counts.get(role, 0) + 1
+        
+        # 生成描述文本
+        role_descriptions = []
+        role_description_map = {
+            "werewolf": "狼人",
+            "villager": "平民",
+            "seer": "预言家",
+            "witch": "女巫",
+            "hunter": "猎人"
+        }
+        
+        for role, count in role_counts.items():
+            chinese_role = role_description_map.get(role, role)
+            role_descriptions.append(f"{count}个{chinese_role}")
+        
+        return "本局初始化角色配置:"+"、".join(role_descriptions)
+        
+    def _generate_night_action_order_for_agent(self, agent) -> str:
+        """
+        为指定Agent生成夜晚行动顺序信息
+        
+        Args:
+            agent: Agent实例
+            
+        Returns:
+            格式化后的夜晚行动顺序信息字符串
+        """
+        action_order = [
+            "1. 狼人：互相确认身份并选择击杀目标",
+            "2. 预言家：查验一名玩家身份，可以知道对方是好人还是狼人",
+            "3. 女巫：选择是否使用解药救人或使用毒药杀人",
+            "4. 猎人：无夜间行动"
+        ]
+        return "\n".join(action_order)
+
     def _build_werewolf_private_prompt(self, werewolf_agent, context):
         """
         构建狼人私聊提示词
@@ -694,9 +809,23 @@ class GameEngine:
         Returns:
             构建好的提示词
         """
-        # 构建专门用于狼人私聊的提示词，用于讨论阶段
-        prompt = f"""
-你是{werewolf_agent.agent_id}号玩家，身份是狼人。
+        # 加载狼人角色提示词模板
+        role_template_file = os.path.join(werewolf_agent.project_root, "prompts", f"{werewolf_agent.role}_role.txt")
+        try:
+            with open(role_template_file, "r", encoding="utf-8") as f:
+                base_prompt = f.read()
+        except FileNotFoundError:
+            # 如果找不到角色特定的模板，则使用通用模板
+            template_file = os.path.join(werewolf_agent.project_root, werewolf_agent.config["prompt"]["template_file"])
+            if not os.path.exists(template_file):
+                # fallback to default location
+                template_file = os.path.join(werewolf_agent.project_root, "prompts", "agent_template.txt")
+            with open(template_file, "r", encoding="utf-8") as f:
+                base_prompt = f.read()
+        
+        # 添加私聊专用内容
+        private_discussion_prompt = f"""
+
 你们需要讨论今晚要击杀的目标。
 
 当前游戏信息：
@@ -705,12 +834,47 @@ class GameEngine:
 - 已淘汰玩家: {context['eliminated_agents']}
 
 狼人团队成员之间可以进行私聊讨论，请与其他狼人协商决定今晚的击杀目标。
-请直接回复你的讨论内容，不需要额外的格式。
 
 历史私聊记录：
 """
         for msg in context['private_chat_history']:
-            prompt += f"{msg['sender']}号玩家: {msg['message']}\n"
+            private_discussion_prompt += f"{msg['sender']}号玩家: {msg['message']}\n"
+        
+        # 合并基础提示词和私聊专用内容
+        prompt = base_prompt + private_discussion_prompt
+        
+        # 替换模板中的变量
+        prompt = prompt.replace("agent_id", str(werewolf_agent.agent_id))
+        prompt = prompt.replace("role", werewolf_agent.role)
+        prompt = prompt.replace("team", werewolf_agent.team)
+        prompt = prompt.replace("seat", str(werewolf_agent.agent_id))
+        
+        # 添加游戏状态信息
+        visible_game_state = f"当前阶段: night\n存活玩家: {context['alive_agents']}\n已淘汰玩家: {context.get('eliminated_agents', [])}"
+        prompt = prompt.replace("visible_game_state", visible_game_state)
+        
+        # 添加记忆信息
+        short_memory_str = "\n".join(werewolf_agent.short_memory[-5:]) if werewolf_agent.short_memory else "无"
+        prompt = prompt.replace("short_memory", short_memory_str)
+        
+        prediction_memory_str = json.dumps(werewolf_agent.prediction_memory, ensure_ascii=False, indent=2) if werewolf_agent.prediction_memory else "无"
+        prompt = prompt.replace("prediction_memory", prediction_memory_str)
+        
+        # 添加狼人队友信息
+        werewolf_teammates = [a.agent_id for a in werewolf_agent.game_engine_ref.agents 
+                              if a.role == "werewolf" and a.agent_id != werewolf_agent.agent_id 
+                              and a.agent_id in werewolf_agent.game_engine_ref.game_state["alive_agents"]]
+        teammates_str = ", ".join(map(str, werewolf_teammates)) if werewolf_teammates else "无"
+        prompt = prompt.replace("known_teammates", teammates_str)
+        
+        # 动态生成本局游戏的角色分配信息
+        role_allocation_info = self._generate_role_allocation_info_for_agent(werewolf_agent)
+        
+        prompt = prompt.replace("werewolf_allocation_info", role_allocation_info)
+        
+        # 生成夜晚行动顺序信息
+        night_action_order = self._generate_night_action_order_for_agent(werewolf_agent)
+        prompt = prompt.replace("night_action_order", night_action_order)
         
         return prompt
 
@@ -725,9 +889,23 @@ class GameEngine:
         Returns:
             构建好的提示词
         """
-        # 构建用于最终决策的提示词
-        prompt = f"""
-你是{werewolf_agent.agent_id}号玩家，身份是狼人。
+        # 加载狼人角色提示词模板
+        role_template_file = os.path.join(werewolf_agent.project_root, "prompts", f"{werewolf_agent.role}_role.txt")
+        try:
+            with open(role_template_file, "r", encoding="utf-8") as f:
+                base_prompt = f.read()
+        except FileNotFoundError:
+            # 如果找不到角色特定的模板，则使用通用模板
+            template_file = os.path.join(werewolf_agent.project_root, werewolf_agent.config["prompt"]["template_file"])
+            if not os.path.exists(template_file):
+                # fallback to default location
+                template_file = os.path.join(werewolf_agent.project_root, "prompts", "agent_template.txt")
+            with open(template_file, "r", encoding="utf-8") as f:
+                base_prompt = f.read()
+        
+        # 添加决策专用内容
+        decision_prompt = f"""
+
 你们已经完成了内部讨论，现在需要基于讨论结果做出最终的击杀决策。
 
 当前游戏信息：
@@ -738,14 +916,49 @@ class GameEngine:
 狼人私聊讨论记录：
 """
         for msg in context['private_chat_history']:
-            prompt += f"{msg['sender']}号玩家: {msg['message']}\n"
+            decision_prompt += f"{msg['sender']}号玩家: {msg['message']}\n"
         
-        prompt += f"""
+        decision_prompt += f"""
 请基于以上讨论内容，选择一个玩家进行击杀。
 请只输出一个数字，代表你要击杀的玩家编号，不要包含其他任何文字。
 例如，如果你想击杀3号玩家，只需输出：3
 可选择的玩家编号：{context['alive_agents']}
 """
+        
+        # 合并基础提示词和决策专用内容
+        prompt = base_prompt + decision_prompt
+        
+        # 替换模板中的变量
+        prompt = prompt.replace("agent_id", str(werewolf_agent.agent_id))
+        prompt = prompt.replace("role", werewolf_agent.role)
+        prompt = prompt.replace("team", werewolf_agent.team)
+        prompt = prompt.replace("seat", str(werewolf_agent.agent_id))
+        
+        # 添加游戏状态信息
+        visible_game_state = f"当前阶段: night\n存活玩家: {context['alive_agents']}\n已淘汰玩家: {context.get('eliminated_agents', [])}"
+        prompt = prompt.replace("visible_game_state", visible_game_state)
+        
+        # 添加记忆信息
+        short_memory_str = "\n".join(werewolf_agent.short_memory[-5:]) if werewolf_agent.short_memory else "无"
+        prompt = prompt.replace("short_memory", short_memory_str)
+        
+        prediction_memory_str = json.dumps(werewolf_agent.prediction_memory, ensure_ascii=False, indent=2) if werewolf_agent.prediction_memory else "无"
+        prompt = prompt.replace("prediction_memory", prediction_memory_str)
+        
+        # 添加狼人队友信息
+        werewolf_teammates = [a.agent_id for a in werewolf_agent.game_engine_ref.agents 
+                              if a.role == "werewolf" and a.agent_id != werewolf_agent.agent_id 
+                              and a.agent_id in werewolf_agent.game_engine_ref.game_state["alive_agents"]]
+        teammates_str = ", ".join(map(str, werewolf_teammates)) if werewolf_teammates else "无"
+        prompt = prompt.replace("known_teammates", teammates_str)
+        
+        # 动态生成本局游戏的角色分配信息
+        role_allocation_info = self._generate_role_allocation_info_for_agent(werewolf_agent)
+        prompt = prompt.replace("role_allocation_info", role_allocation_info)
+        
+        # 生成夜晚行动顺序信息
+        night_action_order = self._generate_night_action_order_for_agent(werewolf_agent)
+        prompt = prompt.replace("night_action_order", night_action_order)
         
         return prompt
 
