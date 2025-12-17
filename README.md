@@ -7,7 +7,7 @@
 - 完全自动化的狼人杀游戏流程
 - 支持多种角色：平民、狼人、预言家、女巫、猎人等
 - 可配置的角色数量和游戏参数
-- 多种大语言模型支持（DeepSeek、Qwen、Kimi、DouBao等）和自主拓展。
+- 多种大语言模型支持（DeepSeek、Qwen、Kimi、DouBao、Mimo、HunYun等）和自主拓展。
 - 构建Agent与Agent，Agent与环境通信，进行Agent memory和context engine构建。
 - 详细的日志记录和游戏过程追踪
 - JSON格式的标准化LLM交互协议
@@ -30,6 +30,12 @@ MAWS/
 │   ├── logger.py           # 日志系统
 │   └── utils.py            # 工具函数
 └── logs/                   # 日志文件目录
+```
+
+## 下载源码
+```bash
+git clone https://github.com/ssyb34947-maker/MAWS.git
+cd MAWS
 ```
 
 ## 安装依赖

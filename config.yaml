@@ -6,7 +6,7 @@ models:
   default: deepseek
   adapters:
     deepseek:
-      type: http
+      type: openai
       model: deepseek-chat
       api_key: "YOURAPIKEY"
       api_base: "https://api.deepseek.com"
@@ -26,11 +26,22 @@ models:
       api_key: "YOURAPIKEY"
       api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
     DouBao:
-      type: http
+      type: openai
       model: doubao-1-5-pro-32k-250115
       api_key: "YOURAPIKEY"
       api_base: "https://ark.cn-beijing.volces.com/api/v3"
-    
+    MiMo:
+      type: openai
+      model: mimo-v2-flash
+      api_key: "YOURAPIKEY"
+      api_base: "https://api.xiaomimimo.com/v1"
+    HunYun:
+      type: openai
+      model: hunyuan-turbos-latest
+      api_key: "YOURAPIKEY"
+      api_base: "https://api.hunyuan.cloud.tencent.com/v1"
+
+
 roles:
   default_setup:
     total_agents: 8
