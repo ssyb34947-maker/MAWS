@@ -19,7 +19,7 @@
 <img src='img/home.png' alt='home' align='center'>
 <p align='center'>主界面</p>
 
-<video src='video/demo.mp4' alt='game' align='center' controls></video>
+<img src='video/demo.gif' alt='game' align='center' width='600'>
 
 <p align='center'>Simulation Demo</p>
 
