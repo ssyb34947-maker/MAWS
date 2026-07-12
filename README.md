@@ -1,6 +1,27 @@
-# A Multi-Agent Werewolf Simulator
-本项目构建了一个多智能体系统，用来模拟多个基于大模型的智能体观测环境、思考、交互和行动，自动化进行狼人杀游戏。
+<h1 align="center">新狼人杀</h1>
+<p align='center'><strong>A Multi-Agent Werewolf Simulator</strong></p>
+<p align="center">
+<a href="#">
+<img src="https://img.shields.io/badge/FastAPI-12%2B-blue" alt="FastAPI" width="120" height="30">
+</a>
+<a href="#">
+<img src="https://img.shields.io/badge/Python-12%2B-blue" alt="Python" width="120" height="30">
+</a>
+<a href="#">
+<img src="https://img.shields.io/badge/AGENT-8%2B-blue" alt="AGENT" width="120" height="30">
+</a>
+<a href="#">
+<img src="https://img.shields.io/badge/GAME-12%2B-blue" alt="GAME" width="120" height="30">
+</a>
 
+</p>
+
+<img src='img/home.png' alt='home' align='center'>
+<p align='center'>主界面</p>
+
+<video src='video/demo.mp4' alt='game' align='center' controls></video>
+
+<p align='center'>Simulation Demo</p>
 
 ## 功能特点
 
