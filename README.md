@@ -17,11 +17,13 @@
 </p>
 
 <img src='img/home.png' alt='home' align='center'>
-<p align='center'>主界面</p>
+<p align='center'><strong>主界面</strong></p>
 
-<img src='video/demo.gif' alt='game' align='center' width='600'>
+<p align='center'>
+<img src='video/demo.gif' alt='game' align='center'>
+</p>
 
-<p align='center'>Simulation Demo</p>
+<p align='center'><strong>Simulation Demo</strong></p>
 
 ## 功能特点
 
