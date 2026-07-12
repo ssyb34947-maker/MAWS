@@ -1,5 +1,9 @@
-from abc import ABC, abstractmethod
 from typing import Dict, List, Any, Optional
+
+try:
+    from rulebook import build_agent_system_prompt
+except ImportError:
+    from .rulebook import build_agent_system_prompt
 try:
     from loguru import logger
 except ImportError:
@@ -8,7 +12,7 @@ except ImportError:
     logger = logging.getLogger(__name__)
 
 
-class WerewolfAgent(ABC):
+class WerewolfAgent:
     """
     狼人杀游戏中的智能体基类
     
@@ -24,8 +28,15 @@ class WerewolfAgent(ABC):
         game_engine_ref: 对游戏引擎的引用，用于获取游戏状态
     """
     
-    def __init__(self, agent_id: int, role: str, team: str, 
-                 model_config: Dict[str, Any], prompt_template: str):
+    def __init__(
+        self,
+        agent_id: int,
+        role: str,
+        team: str,
+        model_config: Dict[str, Any],
+        prompt_template: str,
+        role_allocation: Optional[Dict[str, int]] = None,
+    ):
         self.agent_id = agent_id
         self.role = role
         self.team = team
@@ -35,50 +46,16 @@ class WerewolfAgent(ABC):
         self.prediction_memory: Dict[str, Any] = {}
         self.system_memory: Dict[str, Any] = {
             "role": role,
-            "team": team
+            "team": team,
+            "role_allocation": role_allocation or {},
         }
+        self.system_prompt = build_agent_system_prompt(
+            agent_id=agent_id,
+            role=role,
+            team=team,
+            role_allocation=role_allocation or {},
+        )
         self.game_engine_ref = None
-
-    @abstractmethod
-    def think(self, night_or_day: str, game_state: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        让LLM生成"思考结果"并返回解析后的JSON
-        
-        Args:
-            night_or_day: "night" 或 "day"
-            game_state: 当前可见的游戏状态信息
-            
-        Returns:
-            解析后的JSON字典
-        """
-        pass
-
-    @abstractmethod
-    def speak(self, thought: Dict[str, Any], game_state: Dict[str, Any]) -> str:
-        """
-        把思考转为发言
-        
-        Args:
-            thought: think方法返回的思考结果
-            game_state: 当前游戏状态
-            
-        Returns:
-            发言内容字符串
-        """
-        pass
-
-    @abstractmethod
-    def act(self, thought: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        根据思考结果返回行为
-        
-        Args:
-            thought: think方法返回的思考结果
-            
-        Returns:
-            行为JSON字典
-        """
-        pass
 
     def update_memory(self, settlement_info: Dict[str, Any], when: str):
         """
@@ -124,6 +101,8 @@ class WerewolfAgent(ABC):
         return {
             "id": self.agent_id,
             "role": self.role,
+            "team": self.team,
+            "system_memory": self.system_memory,
             "short_memory": self.short_memory,
             "prediction_memory": self.prediction_memory
         }
