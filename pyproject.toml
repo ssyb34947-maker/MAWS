@@ -1,0 +1,18 @@
+[project]
+name = "maws"
+version = "0.1.0"
+description = "Werewolf AI simulation game"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "langchain>=0.3.0",
+    "openai>=1.50.0",
+    "pyyaml>=6.0",
+    "pydantic>=2.0.0",
+    "loguru>=0.7.0",
+    "requests>=2.31.0",
+    "fastapi>=0.139.0",
+    "uvicorn[standard]>=0.51.0",
+    "websockets>=15.0",
+    "httpx>=0.28.0",
+]
