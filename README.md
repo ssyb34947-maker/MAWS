@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="img/maws-logo.png" alt="MAWS Logo" width="180">
+</p>
+
 <h1 align="center">新狼人杀</h1>
 <p align='center'><strong>A Multi-Agent Werewolf Simulator</strong></p>
 <p align="center">
