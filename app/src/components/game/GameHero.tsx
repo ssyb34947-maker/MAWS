@@ -28,7 +28,7 @@ function GameHero({ snapshot, onStop }: GameHeroProps) {
             </div>
           </div>
           <TownWorld snapshot={snapshot} />
-          <ActionRail events={snapshot.events} />
+          <ActionRail events={snapshot.events} phase={snapshot.phase} />
         </div>
         <StatusBoard snapshot={snapshot} />
       </section>

@@ -22,6 +22,7 @@ const factionLabels: Record<string, string> = {
 function GameOverScreen({ snapshot, onRestart }: GameOverScreenProps) {
   const [visible, setVisible] = useState(false)
   const [revealRoles, setRevealRoles] = useState(false)
+  const [minimized, setMinimized] = useState(false)
 
   const winner = snapshot.winner || ''
   const isWolfWin = winner === 'werewolves'
@@ -35,8 +36,12 @@ function GameOverScreen({ snapshot, onRestart }: GameOverScreenProps) {
     return () => { clearTimeout(t1); clearTimeout(t2) }
   }, [])
 
+  useEffect(() => {
+    setMinimized(false)
+  }, [snapshot.winner, snapshot.day])
+
   return (
-    <div className="gameover-overlay">
+    <div className={`gameover-overlay${minimized ? ' gameover-overlay--minimized' : ''}`}>
       <div className={`gameover-card${visible ? ' gameover-card--show' : ''}`}>
         <div className="gameover-badge">{winnerEmoji}</div>
         <h1 className={`gameover-title gameover-title--${isDraw ? 'draw' : isWolfWin ? 'werewolves' : 'villagers'}`}>
@@ -74,9 +79,29 @@ function GameOverScreen({ snapshot, onRestart }: GameOverScreenProps) {
           </div>
         </div>
 
-        <button className="home-btn home-btn--primary" onClick={onRestart} style={{ marginTop: '24px' }}>
-          返回首页
-        </button>
+        <div className="gameover-actions">
+          <button className="home-btn home-btn--secondary" onClick={() => setMinimized(true)}>
+            查看对局详细
+          </button>
+          <button className="home-btn home-btn--primary" onClick={onRestart}>
+            返回首页
+          </button>
+        </div>
+      </div>
+
+      <div className="gameover-dock" aria-live="polite">
+        <div className="gameover-dock__summary">
+          <strong>{winnerLabel} 获胜</strong>
+          <span>第 {snapshot.day} 天 · 结算已最小化</span>
+        </div>
+        <div className="gameover-dock__actions">
+          <button className="home-btn home-btn--secondary" onClick={() => setMinimized(false)}>
+            恢复结算
+          </button>
+          <button className="home-btn home-btn--primary" onClick={onRestart}>
+            返回首页
+          </button>
+        </div>
       </div>
     </div>
   )

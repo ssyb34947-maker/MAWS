@@ -1857,6 +1857,15 @@ button,
   animation: gameoverFadeIn 0.5s ease forwards;
 }
 
+.gameover-overlay--minimized {
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 18px;
+  pointer-events: none;
+  background: transparent;
+  backdrop-filter: none;
+}
+
 @keyframes gameoverFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -1878,6 +1887,10 @@ button,
 .gameover-card--show {
   transform: scale(1) translateY(0);
   opacity: 1;
+}
+
+.gameover-overlay--minimized .gameover-card {
+  display: none;
 }
 
 .gameover-badge {
@@ -1997,12 +2010,91 @@ button,
   color: #74d66c;
 }
 
+.gameover-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.gameover-dock {
+  display: none;
+  width: min(420px, calc(100vw - 36px));
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 230, 160, 0.22);
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(45, 29, 20, 0.96), rgba(26, 20, 16, 0.98));
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.34);
+  pointer-events: auto;
+}
+
+.gameover-overlay--minimized .gameover-dock {
+  display: flex;
+}
+
+.gameover-dock__summary {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.gameover-dock__summary strong {
+  color: #fff1bf;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.gameover-dock__summary span {
+  color: rgba(255, 246, 216, 0.5);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.gameover-dock__actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.gameover-dock__actions .home-btn,
+.gameover-actions .home-btn {
+  padding: 10px 18px;
+  min-height: 40px;
+  white-space: nowrap;
+}
+
 @media (min-width: 640px) {
   .gameover-roles__grid {
     grid-template-columns: 1fr 1fr;
   }
   .gameover-player {
     grid-template-columns: 32px 64px 1fr 40px;
+  }
+}
+
+@media (max-width: 560px) {
+  .gameover-card {
+    padding: 30px 20px;
+  }
+
+  .gameover-actions,
+  .gameover-dock,
+  .gameover-dock__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .gameover-dock {
+    width: calc(100vw - 28px);
+    padding: 14px;
+  }
+
+  .gameover-dock__summary {
+    text-align: center;
   }
 }
 
