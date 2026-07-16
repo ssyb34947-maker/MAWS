@@ -15,4 +15,5 @@ dependencies = [
     "uvicorn[standard]>=0.51.0",
     "websockets>=15.0",
     "httpx>=0.28.0",
+    "fastmcp>=2.0.0",
 ]
