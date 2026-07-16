@@ -37,7 +37,7 @@
 - 多种大语言模型支持（DeepSeek、Qwen、Kimi、DouBao、Mimo、HunYun等）和自主拓展。
 - 构建Agent与Agent，Agent与环境通信，进行Agent memory和context engine构建。
 - 详细的日志记录和游戏过程追踪
-- JSON格式的标准化LLM交互协议
+- 基于模型原生 tool calling 与独立 MCP 工具进程的 Agent 行动协议
 
 ## 项目结构
 
@@ -141,6 +141,11 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 
 
+
+### Agent 工具调用协议
+
+当前版本不再要求模型在普通文本中输出 JSON。游戏引擎会按阶段生成 OpenAI 兼容的 `tools` schema，模型通过原生 tool calling 选择一个工具；随后 `src/mcp_tools/client.py` 通过 FastMCP stdio 客户端启动独立的 `src/mcp_tools/server.py` 子进程，由 MCP `tools/call` 完成参数校验和游戏动作转换。
+
 ### 添加新角色
 1. 在 `config.yaml` 中添加角色配置
 2. 实现角色相关的特殊能力逻辑（需要继续开发，作者正在开发中......）
@@ -185,7 +190,7 @@ python -m pytest tests/test_models_adapter.py
 - `WerewolfAgent` 基类定义了所有Agent的接口
 - 每个Agent都有自己的身份、阵营、短期记忆和预测区
 - 核心方法包括：
-  - `think()` - 思考并生成JSON格式的决策
+  - `think()` - 思考并通过模型原生 tool calling 选择行动
   - `speak()` - 将思考转化为发言
   - `act()` - 执行具体行动
   - `update_memory()` - 更新记忆
