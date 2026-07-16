@@ -39,6 +39,28 @@ class ModelsAdapter:
         messages.append({"role": "user", "content": prompt_text})
         return messages
 
+    def _print_raw_tool_response(self, message: Any, provider: str) -> None:
+        try:
+            if hasattr(message, "model_dump"):
+                raw_message = message.model_dump(mode="json")
+            elif isinstance(message, dict):
+                raw_message = message
+            else:
+                raw_message = {"repr": repr(message)}
+            debug_payload = {
+                "provider": provider,
+                "model": self.model_config.get("model"),
+                "content": raw_message.get("content"),
+                "reasoning_content": raw_message.get("reasoning_content"),
+                "tool_calls": raw_message.get("tool_calls"),
+                "raw_message": raw_message,
+            }
+            print("\n========== RAW LLM TOOL RESPONSE ==========")
+            print(json.dumps(debug_payload, ensure_ascii=False, indent=2, default=str))
+            print("======== END RAW LLM TOOL RESPONSE ========\n", flush=True)
+        except Exception as exc:
+            print(f"[raw-llm-tool-response-print-failed] {exc}; message={message!r}", flush=True)
+
     def call_model(self, prompt_text: str, system_prompt: Optional[str] = None) -> str:
         """
         调用模型并返回原始字符串输出
@@ -63,6 +85,147 @@ class ModelsAdapter:
         except Exception as e:
             logger.error(f"Error calling model: {e}")
             return self._mock_response()  # 返回模拟响应作为默认值
+
+    def call_tool(
+        self,
+        prompt_text: str,
+        tools: List[Dict[str, Any]],
+        system_prompt: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        调用模型原生 tool calling，返回模型选择的工具名和参数。
+        不再要求模型在普通文本中手写 JSON。
+        """
+        model_type = self.model_config.get("type", "openai")
+        try:
+            if model_type == "openai" and OPENAI_AVAILABLE:
+                return self._call_openai_tool(prompt_text, tools, system_prompt)
+            return self._call_http_tool(prompt_text, tools, system_prompt)
+        except Exception as e:
+            logger.error(f"Error calling model tool: {e}")
+            return self._deterministic_tool_fallback(tools, "模型工具调用失败，系统按合法工具兜底")
+
+    def _call_openai_tool(
+        self,
+        prompt_text: str,
+        tools: List[Dict[str, Any]],
+        system_prompt: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        http_client = None
+        if HTTPX_AVAILABLE and not self.model_config.get("trust_env_proxy", False):
+            http_client = httpx.Client(trust_env=False, timeout=self.model_config.get("timeout", 60))
+
+        client = OpenAI(
+            api_key=self.model_config.get("api_key"),
+            base_url=self.model_config.get("api_base"),
+            http_client=http_client,
+        )
+        request_payload = {
+            "model": self.model_config.get("model"),
+            "messages": self._build_messages(prompt_text, system_prompt),
+            "temperature": self.model_config.get("temperature", 0.7),
+            "max_tokens": self.model_config.get("max_tokens", 500),
+            "tools": tools,
+        }
+        if self.model_config.get("force_tool_choice", False):
+            request_payload["tool_choice"] = "required"
+        response = client.chat.completions.create(**request_payload)
+        message = response.choices[0].message
+        self._print_raw_tool_response(message, "openai-compatible-sdk")
+        tool_calls = getattr(message, "tool_calls", None) or []
+        if not tool_calls:
+            return self._deterministic_tool_fallback(tools, "模型未返回原生工具调用")
+        call = tool_calls[0]
+        function = call.function
+        return {
+            "name": function.name,
+            "arguments": self._load_tool_arguments(function.arguments),
+        }
+
+    def _call_http_tool(
+        self,
+        prompt_text: str,
+        tools: List[Dict[str, Any]],
+        system_prompt: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        headers = {
+            "Authorization": f"Bearer {self.model_config.get('api_key')}",
+            "Content-Type": "application/json",
+        }
+        api_base = self.model_config.get("api_base", "").rstrip("/")
+        if not api_base.startswith("http"):
+            api_base = "https://" + api_base
+        if "deepseek" in api_base and not api_base.endswith("/v1"):
+            url = api_base + "/v1/chat/completions"
+        elif "dashscope" in api_base or "volces.com" in api_base:
+            url = api_base + "/chat/completions"
+        elif api_base.endswith("/v1"):
+            url = api_base + "/chat/completions"
+        else:
+            url = api_base + "/v1/chat/completions"
+
+        data = {
+            "model": self.model_config.get("model"),
+            "messages": self._build_messages(prompt_text, system_prompt),
+            "temperature": self.model_config.get("temperature", 0.7),
+            "max_tokens": self.model_config.get("max_tokens", 500),
+            "tools": tools,
+        }
+        if self.model_config.get("force_tool_choice", False):
+            data["tool_choice"] = "required"
+        response = requests.post(url, headers=headers, json=data, timeout=self.model_config.get("timeout", 60))
+        response.raise_for_status()
+        result = response.json()
+        choices = result.get("choices") or []
+        if not choices:
+            raise ValueError("Tool call response has no choices")
+        message = choices[0].get("message") or {}
+        self._print_raw_tool_response(message, "openai-compatible-http")
+        tool_calls = message.get("tool_calls") or []
+        if not tool_calls:
+            return self._deterministic_tool_fallback(tools, "模型未返回原生工具调用")
+        function = tool_calls[0].get("function") or {}
+        return {
+            "name": function.get("name"),
+            "arguments": self._load_tool_arguments(function.get("arguments")),
+        }
+
+    def _load_tool_arguments(self, raw_arguments: Any) -> Dict[str, Any]:
+        if isinstance(raw_arguments, dict):
+            return raw_arguments
+        if raw_arguments in (None, ""):
+            return {}
+        try:
+            payload = json.loads(raw_arguments)
+        except (TypeError, json.JSONDecodeError):
+            return {}
+        return payload if isinstance(payload, dict) else {"value": payload}
+
+    def _deterministic_tool_fallback(self, tools: List[Dict[str, Any]], reason: str) -> Dict[str, Any]:
+        if not tools:
+            return {
+                "name": "abstain",
+                "arguments": {"reason": "本轮我不投票"},
+                "fallback_reason": reason,
+            }
+
+        function = tools[0].get("function") or {}
+        name = function.get("name") or "abstain"
+        schema = function.get("parameters") or {}
+        properties = schema.get("properties") or {}
+
+        if "speech" in properties:
+            return {
+                "name": name,
+                "arguments": {"speech": "本轮我不发言"},
+                "fallback_reason": reason,
+            }
+
+        return {
+            "name": "abstain",
+            "arguments": {"reason": "本轮我不投票"},
+            "fallback_reason": reason,
+        }
 
     def _call_openai_model(self, prompt_text: str, system_prompt: Optional[str] = None) -> str:
         """

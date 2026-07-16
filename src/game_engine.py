@@ -1,6 +1,7 @@
 from typing import Dict, List, Any, Optional
 from agent import WerewolfAgent
-from agent_tools import AgentToolRuntime, ToolExecution
+from agent_tools import AgentToolRuntime, ToolCall, ToolExecution
+from mcp_tools import MCPToolClient
 from game_control import MemoryEvent, MemoryInjector, TiePolicy, Visibility, VoteKind, VoteSession
 from logger import GameLogger
 from utils import load_config, assign_roles
@@ -50,6 +51,8 @@ class GameEngine:
         # 初始化日志记录器
         log_pattern = self.config["game"].get("logging", {}).get("file", "logs/game_{timestamp}.log")
         self.logger = GameLogger(log_pattern)
+        
+        self.tool_mcp_client = MCPToolClient()
         
         # 注意：不再在初始化时设置固定的随机种子，让每次运行都有不同的随机分布
 
@@ -505,6 +508,7 @@ class GameEngine:
         
         
         # 投票
+        self._notify_frontend_phase("voting")
         alive_voters = sorted(self.game_state["alive_agents"])
         vote_session = VoteSession(
             kind=VoteKind.DAY_ELIMINATION,
@@ -568,6 +572,10 @@ class GameEngine:
         else:
             self.logger.log_system(phase, f"Hunter {hunter.agent_id} chose not to shoot")
 
+    def _notify_frontend_phase(self, phase_label: str):
+        """Hook for UI adapters; CLI engine ignores frontend-only phase labels."""
+        return None
+
     def _inject_memory_event(self, phase: str, source: str, content: str, visibility: Visibility,
                              recipients: Optional[List[int]] = None) -> List[int]:
         event = MemoryEvent(
@@ -615,27 +623,33 @@ class GameEngine:
             extra_context=extra_context,
             eligible_targets_by_tool=eligible_targets_by_tool,
         )
-        response_text = agent.model_adapter.call_model(
+        model_tool_call = agent.model_adapter.call_tool(
             prompt,
+            tools=runtime.to_model_tools(
+                tools,
+                eligible_targets=eligible_targets,
+                eligible_targets_by_tool=eligible_targets_by_tool,
+            ),
             system_prompt=getattr(agent, "system_prompt", None),
         )
-        tool_call = runtime.parse_tool_call(
-            response_text,
-            tools=tools,
-            eligible_targets=eligible_targets,
-            eligible_targets_by_tool=eligible_targets_by_tool,
-            agent=agent,
+        tool_call = ToolCall(
+            name=str(model_tool_call.get("name") or "abstain"),
+            arguments=model_tool_call.get("arguments") or {},
         )
-        execution = runtime.execute(
+        allowed_tool_names = [tool.name for tool in tools]
+        if model_tool_call.get("fallback_reason") and tool_call.name == "abstain" and "abstain" not in allowed_tool_names:
+            allowed_tool_names.append("abstain")
+        execution = self.tool_mcp_client.execute(
             agent=agent,
             tool_call=tool_call,
-            tools=tools,
+            allowed_tool_names=allowed_tool_names,
             eligible_targets=eligible_targets,
             eligible_targets_by_tool=eligible_targets_by_tool,
         )
         self.logger.log("tool", agent.agent_id, "tool_call", {
             "intent": intent,
             "requested": {"name": tool_call.name, "arguments": tool_call.arguments},
+            "fallback_reason": model_tool_call.get("fallback_reason"),
             "execution": {
                 "tool_name": execution.tool_name,
                 "action": execution.action,

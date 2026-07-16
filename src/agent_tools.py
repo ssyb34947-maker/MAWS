@@ -40,24 +40,24 @@ class ToolExecution:
 ALL_TOOL_SPECS: Dict[str, ToolSpec] = {
     "speak_public": ToolSpec(
         name="speak_public",
-        description="白天公开发言。发言会被所有存活玩家看见并注入记忆。",
-        parameters={"speech": "string，公开发言内容"},
+        description="白天公开发言。必须调用本 MCP tool 提交发言；普通 assistant content 不会被游戏采纳。speech 是唯一会公开给所有存活玩家并注入记忆的发言正文。",
+        parameters={"speech": "string，必填，公开发言正文；不要把发言写到普通文本中；120字以内，简体中文"},
         allowed_roles=["villager", "werewolf", "seer", "witch", "hunter"],
         action_type="speech",
         visibility="public",
     ),
     "werewolf_private_message": ToolSpec(
         name="werewolf_private_message",
-        description="狼人夜间私聊。只有存活狼人可见。",
-        parameters={"speech": "string，给狼人队友的私聊内容"},
+        description="狼人夜间私聊。必须调用本 MCP tool 发送私聊；普通 assistant content 不会被狼人队友看见。speech 只对存活狼人可见并注入狼人记忆。",
+        parameters={"speech": "string，必填，给狼人队友的私聊正文；不要写到普通文本中；120字以内，简体中文"},
         allowed_roles=["werewolf"],
         action_type="private_chat",
         visibility="werewolf",
     ),
     "vote_day": ToolSpec(
         name="vote_day",
-        description="白天公投放逐目标。只能投存活玩家。",
-        parameters={"target": "int，目标玩家编号", "reason": "string，投票理由"},
+        description="白天公投放逐目标。必须调用本 MCP tool 才算投票；普通 assistant content 中的目标或理由不会计票。target 必须来自本工具 eligible_targets，且不能是自己。",
+        parameters={"target": "int，必填，放逐目标玩家编号；必须来自 vote_day 的 eligible_targets", "reason": "string，必填，投票理由；简体中文，具体说明怀疑依据"},
         allowed_roles=["villager", "werewolf", "seer", "witch", "hunter"],
         action_type="vote",
         requires_target=True,
@@ -65,8 +65,8 @@ ALL_TOOL_SPECS: Dict[str, ToolSpec] = {
     ),
     "vote_werewolf_kill": ToolSpec(
         name="vote_werewolf_kill",
-        description="狼人夜间投票选择击杀目标，必须选择一个目标。只能选择非狼人存活玩家。",
-        parameters={"target": "int，目标玩家编号", "reason": "string，击杀理由"},
+        description="狼人夜间击杀投票。必须调用本 MCP tool 才算提交刀口；普通 assistant content 中的刀口不会执行。target 必须来自本工具 eligible_targets，只能选择非狼人存活玩家。",
+        parameters={"target": "int，必填，击杀目标玩家编号；必须来自 vote_werewolf_kill 的 eligible_targets", "reason": "string，必填，击杀理由；简体中文，说明威胁或策略收益"},
         allowed_roles=["werewolf"],
         action_type="night_kill",
         requires_target=True,
@@ -74,39 +74,39 @@ ALL_TOOL_SPECS: Dict[str, ToolSpec] = {
     ),
     "seer_check": ToolSpec(
         name="seer_check",
-        description="预言家夜间查验一名其他存活玩家。结果只进入预言家记忆。",
-        parameters={"target": "int，目标玩家编号", "reason": "string，查验理由"},
+        description="预言家夜间查验。必须调用本 MCP tool 才会产生查验结果；普通 assistant content 中的查验目标不会执行。target 必须来自本工具 eligible_targets。",
+        parameters={"target": "int，必填，查验目标玩家编号；必须来自 seer_check 的 eligible_targets", "reason": "string，必填，查验理由；简体中文，说明为何查验该玩家"},
         allowed_roles=["seer"],
         action_type="seer_check",
         requires_target=True,
     ),
     "witch_save": ToolSpec(
         name="witch_save",
-        description="女巫使用解药救被狼人击杀的玩家。只能选择当夜刀口，根据你的判断谨慎使用，非必须使用。",
-        parameters={"target": "int，刀口玩家编号", "reason": "string，救人理由"},
+        description="女巫使用解药。必须调用本 MCP tool 才会消耗解药并救人；普通 assistant content 中的救人决定不会执行。target 只能是当夜刀口且必须来自本工具 eligible_targets。",
+        parameters={"target": "int，必填，刀口玩家编号；必须来自 witch_save 的 eligible_targets", "reason": "string，必填，救人理由；简体中文，说明救或保留资源的判断"},
         allowed_roles=["witch"],
         action_type="witch_save",
         requires_target=True,
     ),
     "witch_poison": ToolSpec(
         name="witch_poison",
-        description="女巫使用毒药毒杀一名其他存活玩家，根据你的判断谨慎使用，非必须使用。",
-        parameters={"target": "int，目标玩家编号", "reason": "string，毒人理由"},
+        description="女巫使用毒药。必须调用本 MCP tool 才会消耗毒药并毒杀；普通 assistant content 中的毒人决定不会执行。target 必须来自本工具 eligible_targets。",
+        parameters={"target": "int，必填，毒杀目标玩家编号；必须来自 witch_poison 的 eligible_targets", "reason": "string，必填，毒人理由；简体中文，说明怀疑依据或收益"},
         allowed_roles=["witch"],
         action_type="witch_poison",
         requires_target=True,
     ),
     "abstain": ToolSpec(
         name="abstain",
-        description="本次行动弃权或不使用技能。",
-        parameters={"reason": "string，弃权理由"},
+        description="本次行动弃权、保留技能或不投票。只有本轮工具列表包含 abstain 时才允许调用；调用后表示本轮没有目标行动。普通 assistant content 不等于弃权。",
+        parameters={"reason": "string，必填，弃权/保留技能/不投票理由；简体中文，说明为什么不行动"},
         allowed_roles=["villager", "werewolf", "seer", "witch", "hunter"],
         action_type="none",
     ),
     "hunter_shot": ToolSpec(
         name="hunter_shot",
-        description="你被淘汰出局，发动最后一枪带走一名其他存活玩家。",
-        parameters={"target": "int，目标玩家编号", "reason": "string，开枪理由"},
+        description="猎人出局后发动最后一枪。必须调用本 MCP tool 才会开枪；普通 assistant content 中的目标不会执行。target 必须来自本工具 eligible_targets。",
+        parameters={"target": "int，必填，开枪目标玩家编号；必须来自 hunter_shot 的 eligible_targets", "reason": "string，必填，开枪理由；简体中文，说明带走该玩家的依据"},
         allowed_roles=["hunter"],
         action_type="hunter_shot",
         requires_target=True,
@@ -124,6 +124,22 @@ INTENT_TOOLS: Dict[str, List[str]] = {
     "hunter_shot": ["hunter_shot", "abstain"],
 }
 
+
+PHASE_LABELS: Dict[str, str] = {
+    "night": "黑夜阶段",
+    "day": "白天阶段",
+    "init": "初始化阶段",
+}
+
+INTENT_PHASE_LABELS: Dict[str, str] = {
+    "day_speech": "白天发言",
+    "day_vote": "白天公投",
+    "werewolf_private_chat": "狼人夜间私聊",
+    "werewolf_kill": "狼人夜间击杀投票",
+    "seer_night": "预言家夜间查验",
+    "witch_night": "女巫夜间行动",
+    "hunter_shot": "猎人出局开枪",
+}
 
 INTENT_INSTRUCTIONS: Dict[str, str] = {
     "day_speech": "现在轮到你白天公开发言。必须调用 speak_public。发言要推动局势，不要机械复读‘信息不足’。",
@@ -178,20 +194,22 @@ class AgentToolRuntime:
         short_memory = "\n".join(agent.short_memory[-8:]) if getattr(agent, "short_memory", None) else "无"
         prediction_memory = json.dumps(getattr(agent, "prediction_memory", {}) or {}, ensure_ascii=False)
         eligible_targets_by_tool = eligible_targets_by_tool or {}
-        tools_payload = [
-            {
-                "name": tool.name,
-                "description": tool.description,
-                "parameters": tool.parameters,
-                "requires_target": tool.requires_target,
-                "action_type": tool.action_type,
-                "eligible_targets": eligible_targets_by_tool.get(tool.name, eligible_targets or []),
-            }
-            for tool in tools
-        ]
+        engine_phase = str(game_state.get("phase") or "unknown")
+        phase_context = {
+            "day": game_state.get("day"),
+            "engine_phase": engine_phase,
+            "engine_phase_label": PHASE_LABELS.get(engine_phase, engine_phase),
+            "current_task": intent,
+            "current_task_label": INTENT_PHASE_LABELS.get(intent, intent),
+            "must_call_one_of": [tool.name for tool in tools],
+            "eligible_targets": eligible_targets or [],
+            "eligible_targets_by_tool": eligible_targets_by_tool,
+        }
         context_payload = {
             "day": game_state.get("day"),
-            "phase": game_state.get("phase"),
+            "phase": engine_phase,
+            "phase_label": PHASE_LABELS.get(engine_phase, engine_phase),
+            "current_task": INTENT_PHASE_LABELS.get(intent, intent),
             "alive_agents": game_state.get("alive_agents", []),
             "eliminated_agents": game_state.get("eliminated_agents", []),
             "eligible_targets": eligible_targets or [],
@@ -204,6 +222,9 @@ class AgentToolRuntime:
         return f"""
 你是狼人杀游戏中的 Agent {agent.agent_id}，身份 {agent.role}，阵营 {agent.team}。固定规则已在 system prompt 中给出。
 
+当前阶段注入：
+{json.dumps(phase_context, ensure_ascii=False, indent=2)}
+
 当前任务：{INTENT_INSTRUCTIONS.get(intent, intent)}
 
 可见游戏状态：
@@ -215,24 +236,66 @@ class AgentToolRuntime:
 你的预测/信念：
 {prediction_memory}
 
-可调用工具如下。你只能调用其中一个工具，不能虚构工具名：
-{json.dumps(tools_payload, ensure_ascii=False, indent=2)}
-
-输出格式必须是严格 JSON，不要输出额外解释：
-{{
-  "tool_call": {{
-    "name": "工具名",
-    "arguments": {{}}
-  }}
-}}
+你必须通过本轮提供的工具完成行动，不要在普通文本里输出行动结果。
 
 要求：
 - 一次只能调用一个工具。发言也是工具调用，不允许在 tool_call 外输出发言。
 - 如果工具有 target，target 必须来自该工具自己的 eligible_targets。
 - 白天投票不能投自己；不要因为“第一天信息少”自动弃票，必须根据发言、身份收益、票型或风险选出最高嫌疑人。
 - 公开发言不能泄漏夜间私聊、队友、刀口、未公开查验/用药等不可见信息；狼人公开发言必须伪装好人。
-- speech/reason 使用简体中文，具体、有行动倾向；发言控制在 120 字以内，避免输出过长导致 JSON 截断，也避免所有人重复同一句“信息不足”。
+- speech/reason 使用简体中文，具体、有行动倾向；发言控制在 120 字以内，避免所有人重复同一句“信息不足”。
 """.strip()
+
+    def to_model_tools(
+        self,
+        tools: List[ToolSpec],
+        eligible_targets: Optional[List[int]] = None,
+        eligible_targets_by_tool: Optional[Dict[str, List[int]]] = None,
+    ) -> List[Dict[str, Any]]:
+        eligible_targets_by_tool = eligible_targets_by_tool or {}
+        model_tools: List[Dict[str, Any]] = []
+        for tool in tools:
+            properties: Dict[str, Any] = {}
+            required: List[str] = []
+            target_pool = eligible_targets_by_tool.get(tool.name, eligible_targets or [])
+
+            if tool.action_type in {"speech", "private_chat"}:
+                properties["speech"] = {
+                    "type": "string",
+                    "description": f"{tool.parameters.get('speech', '发言内容')}。必须填写；只有本参数会被游戏系统采纳，普通 assistant content 会被忽略。",
+                    "maxLength": 120,
+                }
+                required.append("speech")
+            if tool.requires_target:
+                properties["target"] = {
+                    "type": "integer",
+                    "description": f"{tool.parameters.get('target', '目标玩家编号')}；只能从 eligible_targets 中选择；普通 assistant content 中的目标不会执行",
+                    "enum": target_pool,
+                }
+                required.append("target")
+            if "reason" in tool.parameters or tool.action_type not in {"speech", "private_chat"}:
+                properties["reason"] = {
+                    "type": "string",
+                    "description": f"{tool.parameters.get('reason', '行动理由')}。必须填写；只有本参数会被记录，普通 assistant content 会被忽略。",
+                    "maxLength": 120,
+                }
+                if tool.action_type not in {"speech", "private_chat"}:
+                    required.append("reason")
+
+            model_tools.append({
+                "type": "function",
+                "function": {
+                    "name": tool.name,
+                    "description": f"{tool.description} 必须调用此 MCP tool 才能完成该行为；不要把行动写在普通 assistant content。eligible_targets={target_pool}",
+                    "parameters": {
+                        "type": "object",
+                        "properties": properties,
+                        "required": required,
+                        "additionalProperties": False,
+                    },
+                },
+            })
+        return model_tools
 
     def execute(
         self,
